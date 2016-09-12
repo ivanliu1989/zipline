@@ -25,7 +25,6 @@ from cpython cimport bool
 from collections import Iterable
 
 from zipline.assets import Asset, Future
-from zipline.rl_manager import RLManager
 from zipline.zipline_warnings import ZiplineDeprecationWarning
 
 

@@ -24,7 +24,6 @@ from zipline.errors import (
     TradingControlViolation,
 )
 
-
 log = logbook.Logger('TradingControl')
 
 
@@ -138,10 +137,10 @@ class RestrictedListOrder(TradingControl):
         The assets that cannot be ordered.
     """
 
-    def __init__(self, restricted_list, severity):
+    def __init__(self, restricted_list, fail_on_violation):
         super(RestrictedListOrder, self).__init__()
         self.restricted_list = restricted_list
-        self.severity = severity
+        self.fail_on_violation = fail_on_violation
 
     def validate(self,
                  asset,
@@ -153,7 +152,10 @@ class RestrictedListOrder(TradingControl):
         Fail if the asset is in the restricted_list.
         """
         if self.restricted_list.is_restricted(asset, _algo_datetime):
-            getattr(self, 'severity')(asset, amount, _algo_datetime)
+            if self.fail_on_violation:
+                self.fail(asset, amount, _algo_datetime)
+            else:
+                self.warn(asset, amount, _algo_datetime)
 
 
 class MaxOrderSize(TradingControl):
