@@ -137,7 +137,7 @@ class RestrictedListOrder(TradingControl):
         """
         Fail if the asset is in the restricted_list.
         """
-        if asset in self.restricted_list:
+        if self.restricted_list.is_restricted(asset, _algo_datetime):
             self.fail(asset, amount, _algo_datetime)
 
 

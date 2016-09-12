@@ -25,6 +25,7 @@ from cpython cimport bool
 from collections import Iterable
 
 from zipline.assets import Asset, Future
+from zipline.rl_manager import RLManager
 from zipline.zipline_warnings import ZiplineDeprecationWarning
 
 
@@ -424,8 +425,8 @@ cdef class BarData:
 
                 return pd.DataFrame(data)
 
-    @check_parameters(('assets',), (Asset,))
-    def can_trade(self, assets):
+    @check_parameters(('assets', 'rl_manager'), (Asset, RLManager))
+    def can_trade(self, assets, rl_manager):
         """
         For the given asset or iterable of assets, returns true if all of the
         following are true:
@@ -468,19 +469,23 @@ cdef class BarData:
 
         if isinstance(assets, Asset):
             return self._can_trade_for_asset(
-                assets, dt, adjusted_dt, data_portal
+                assets, dt, adjusted_dt, data_portal, rl_manager
             )
         else:
             return pd.Series(data={
                 asset: self._can_trade_for_asset(
-                    asset, dt, adjusted_dt, data_portal
+                    asset, dt, adjusted_dt, data_portal, rl_manager
                 )
                 for asset in assets
             })
 
-    cdef bool _can_trade_for_asset(self, asset, dt, adjusted_dt, data_portal):
+    cdef bool _can_trade_for_asset(self, asset, dt, adjusted_dt, data_portal,
+                                   rl_manager):
         cdef object session_label
         cdef object dt_to_use_for_exchange_check,
+
+        if rl_manager.is_restricted(asset, adjusted_dt):
+            return False
 
         session_label = self._trading_calendar.minute_to_session_label(dt)
 
