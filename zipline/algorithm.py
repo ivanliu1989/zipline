@@ -2224,7 +2224,7 @@ class TradingAlgorithm(object):
         self.register_trading_control(control)
 
     @api_method
-    def set_do_not_order_list(self, restricted_list):
+    def set_do_not_order_list(self, restricted_list, severity='fail'):
         """Set a restriction on which assets can be ordered.
 
         Parameters
@@ -2232,7 +2232,7 @@ class TradingAlgorithm(object):
         restricted_list : container[Asset]
             The assets that cannot be ordered.
         """
-        control = RestrictedListOrder(restricted_list)
+        control = RestrictedListOrder(restricted_list, severity)
         self.register_trading_control(control)
         self.rl_controller.add_restrictions(restricted_list)
 

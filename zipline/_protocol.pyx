@@ -426,7 +426,7 @@ cdef class BarData:
 
                 return pd.DataFrame(data)
 
-    @check_parameters(('assets'), (Asset,))
+    @check_parameters(('assets',), (Asset,))
     def can_trade(self, assets):
         """
         For the given asset or iterable of assets, returns true if all of the

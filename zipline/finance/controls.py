@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import abc
+import logbook
 
 import pandas as pd
 
@@ -22,6 +23,9 @@ from zipline.errors import (
     AccountControlViolation,
     TradingControlViolation,
 )
+
+
+log = logbook.Logger('TradingControl')
 
 
 class TradingControl(with_metaclass(abc.ABCMeta)):
@@ -75,6 +79,16 @@ class TradingControl(with_metaclass(abc.ABCMeta)):
                                       datetime=datetime,
                                       constraint=constraint)
 
+    def log(self, asset, amount, datetime, metadata=None):
+        constraint = repr(self)
+        if metadata:
+            constraint = "{constraint} (Metadata: {metadata})".format(
+                constraint=constraint,
+                metadata=metadata
+            )
+        log.error("Order for %s shares of %s at %s violates trading "
+                  "constraint %s" % (amount, asset, datetime, constraint))
+
     def __repr__(self):
         return "{name}({attrs})".format(name=self.__class__.__name__,
                                         attrs=self.__fail_args)
@@ -124,9 +138,10 @@ class RestrictedListOrder(TradingControl):
         The assets that cannot be ordered.
     """
 
-    def __init__(self, restricted_list):
+    def __init__(self, restricted_list, severity):
         super(RestrictedListOrder, self).__init__()
         self.restricted_list = restricted_list
+        self.severity = severity
 
     def validate(self,
                  asset,
@@ -138,7 +153,7 @@ class RestrictedListOrder(TradingControl):
         Fail if the asset is in the restricted_list.
         """
         if self.restricted_list.is_restricted(asset, _algo_datetime):
-            self.fail(asset, amount, _algo_datetime)
+            getattr(self, 'severity')(asset, amount, _algo_datetime)
 
 
 class MaxOrderSize(TradingControl):
