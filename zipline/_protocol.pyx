@@ -171,7 +171,7 @@ cdef class BarData:
     cdef bool _adjust_minutes
 
     def __init__(self, data_portal, simulation_dt_func, data_frequency,
-                 trading_calendar, universe_func=None):
+                 trading_calendar, rl_controller, universe_func=None):
         self.data_portal = data_portal
         self.simulation_dt_func = simulation_dt_func
         self.data_frequency = data_frequency
@@ -186,6 +186,7 @@ cdef class BarData:
         self._adjust_minutes = False
 
         self._trading_calendar = trading_calendar
+        self._rl_controller = rl_controller
 
     cdef _get_equity_price_view(self, asset):
         """
@@ -425,8 +426,8 @@ cdef class BarData:
 
                 return pd.DataFrame(data)
 
-    @check_parameters(('assets', 'rl_manager'), (Asset, RLManager))
-    def can_trade(self, assets, rl_manager):
+    @check_parameters(('assets'), (Asset,))
+    def can_trade(self, assets):
         """
         For the given asset or iterable of assets, returns true if all of the
         following are true:
@@ -469,22 +470,21 @@ cdef class BarData:
 
         if isinstance(assets, Asset):
             return self._can_trade_for_asset(
-                assets, dt, adjusted_dt, data_portal, rl_manager
+                assets, dt, adjusted_dt, data_portal
             )
         else:
             return pd.Series(data={
                 asset: self._can_trade_for_asset(
-                    asset, dt, adjusted_dt, data_portal, rl_manager
+                    asset, dt, adjusted_dt, data_portal
                 )
                 for asset in assets
             })
 
-    cdef bool _can_trade_for_asset(self, asset, dt, adjusted_dt, data_portal,
-                                   rl_manager):
+    cdef bool _can_trade_for_asset(self, asset, dt, adjusted_dt, data_portal):
         cdef object session_label
         cdef object dt_to_use_for_exchange_check,
 
-        if rl_manager.is_restricted(asset, adjusted_dt):
+        if self._rl_controller.is_restricted(asset, adjusted_dt):
             return False
 
         session_label = self._trading_calendar.minute_to_session_label(dt)

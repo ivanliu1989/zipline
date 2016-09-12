@@ -2,6 +2,34 @@ import abc
 from six import with_metaclass
 from intervaltree import IntervalTree, Interval
 
+
+class RestrictionsController(object):
+
+    def __init__(self):
+        self.rl_managers = []
+
+    def add_restrictions(self, rl_manager):
+        self.rl_managers.append(rl_manager)
+
+    def restriction(self, sid, dt):
+        restrictions = [rlm.restriction(sid, dt) for rlm in self.rl_managers]
+        if 'liquidate' in restrictions:
+            return 'liquidate'
+        elif 'freeze' in restrictions:
+            return 'freeze'
+        elif 'long_only' in restrictions and 'reduce_only' in restrictions:
+            return 'freeze'
+        elif 'long_only' in restrictions:
+            return 'long_only'
+        elif 'reduce_only' in restrictions:
+            return 'reduce_only'
+        else:
+            return 'allowed'
+
+    def is_restricted(self, sid, dt):
+        return any([rlm.is_restricted(sid, dt) for rlm in self.rl_managers])
+
+
 class RLManager(with_metaclass(abc.ABCMeta)):
 
     def __init__(self, **kwargs):

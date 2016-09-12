@@ -35,6 +35,7 @@ from six import (
 )
 
 from zipline._protocol import handle_non_market_minutes
+from zipline.rl_manager import RestrictionsController
 from zipline.assets.synthetic import make_simple_equity_info
 from zipline.data.data_portal import DataPortal
 from zipline.data.us_equity_pricing import PanelBarReader
@@ -419,6 +420,8 @@ class TradingAlgorithm(object):
         # A dictionary of the actual capital change deltas, keyed by timestamp
         self.capital_change_deltas = {}
 
+        self.rl_controller = RestrictionsController()
+
     def init_engine(self, get_loader):
         """
         Construct and store a PipelineEngine from loader.
@@ -565,6 +568,7 @@ class TradingAlgorithm(object):
             self.data_portal,
             self._create_clock(),
             self._create_benchmark_source(),
+            self.rl_controller,
             universe_func=self._calculate_universe
         )
 
@@ -2230,6 +2234,7 @@ class TradingAlgorithm(object):
         """
         control = RestrictedListOrder(restricted_list)
         self.register_trading_control(control)
+        self.rl_controller.add_restrictions(restricted_list)
 
     @api_method
     def set_long_only(self):
